@@ -17,16 +17,56 @@ initDatabase();
 // Store WebSocket clients
 const wsClients = new Set<any>();
 
+// Helper function to check if IP is from local network
+function isLocalNetwork(ip: string): boolean {
+  // Allow localhost
+  if (ip === '127.0.0.1' || ip === '::1' || ip === 'localhost') {
+    return true;
+  }
+  
+  // Check for private IP ranges
+  const parts = ip.split('.');
+  if (parts.length !== 4) return false;
+  
+  const first = parseInt(parts[0]);
+  const second = parseInt(parts[1]);
+  
+  // 10.0.0.0 - 10.255.255.255
+  if (first === 10) return true;
+  
+  // 172.16.0.0 - 172.31.255.255
+  if (first === 172 && second >= 16 && second <= 31) return true;
+  
+  // 192.168.0.0 - 192.168.255.255
+  if (first === 192 && second === 168) return true;
+  
+  return false;
+}
+
 // Create Bun server with HTTP and WebSocket support
 const server = Bun.serve({
   port: 4000,
+  hostname: '0.0.0.0', // Listen on all network interfaces
   
-  async fetch(req: Request) {
+  async fetch(req: Request, server) {
     const url = new URL(req.url);
     
-    // Handle CORS
+    // Get client IP
+    const clientIP = server.requestIP(req)?.address || 'unknown';
+    
+    // Check if request is from local network
+    if (!isLocalNetwork(clientIP)) {
+      console.log(`Blocked request from non-local IP: ${clientIP}`);
+      return new Response('Access denied', { 
+        status: 403,
+        headers: { 'Content-Type': 'text/plain' }
+      });
+    }
+    
+    // Handle CORS - only allow local network origins
+    const origin = req.headers.get('origin') || '';
     const headers = {
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': origin, // Echo back the origin if it's local
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
     };
@@ -270,7 +310,9 @@ const server = Bun.serve({
     
     // WebSocket upgrade
     if (url.pathname === '/stream') {
-      const success = server.upgrade(req);
+      const success = server.upgrade(req, { 
+        data: { clientIP } // Pass client IP to WebSocket handler
+      });
       if (success) {
         return undefined;
       }
@@ -284,7 +326,15 @@ const server = Bun.serve({
   
   websocket: {
     open(ws) {
-      console.log('WebSocket client connected');
+      // Check if WebSocket connection is from local network
+      const clientIP = ws.data?.clientIP || 'unknown';
+      if (!isLocalNetwork(clientIP)) {
+        console.log(`Blocked WebSocket connection from non-local IP: ${clientIP}`);
+        ws.close(1008, 'Access denied');
+        return;
+      }
+      
+      console.log(`WebSocket client connected from ${clientIP}`);
       wsClients.add(ws);
       
       // Send recent events on connection
@@ -312,3 +362,4 @@ const server = Bun.serve({
 console.log(`🚀 Server running on http://localhost:${server.port}`);
 console.log(`📊 WebSocket endpoint: ws://localhost:${server.port}/stream`);
 console.log(`📮 POST events to: http://localhost:${server.port}/events`);
+console.log(`🔒 Security: Only accepting connections from local network (10.x.x.x, 172.16-31.x.x, 192.168.x.x)`);

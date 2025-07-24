@@ -101,9 +101,11 @@ const clearFilters = () => {
   updateFilters();
 };
 
+import { API_BASE_URL } from '../config';
+
 const fetchFilterOptions = async () => {
   try {
-    const response = await fetch('http://localhost:4000/events/filter-options');
+    const response = await fetch(`${API_BASE_URL}/events/filter-options`);
     if (response.ok) {
       filterOptions.value = await response.json();
     }
