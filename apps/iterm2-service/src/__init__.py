@@ -1,0 +1,1 @@
+# iTerm2 Service for Multi-Agent Observability

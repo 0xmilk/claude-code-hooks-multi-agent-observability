@@ -50,6 +50,15 @@
           >
             <span class="text-2xl mobile:text-lg">🎨</span>
           </button>
+          
+          <!-- iTerm2 Terminals Button -->
+          <button
+            @click="showTerminals = !showTerminals"
+            class="p-3 mobile:p-1.5 rounded-lg bg-white/20 hover:bg-white/30 transition-all duration-200 border border-white/30 hover:border-white/50 backdrop-blur-sm shadow-lg hover:shadow-xl"
+            title="iTerm2 Terminals"
+          >
+            <span class="text-2xl mobile:text-lg">🖥️</span>
+          </button>
         </div>
       </div>
     </header>
@@ -93,6 +102,19 @@
       :is-open="showThemeManager"
       @close="showThemeManager = false"
     />
+    
+    <!-- iTerm2 Terminals Modal -->
+    <Teleport to="body">
+      <div
+        v-if="showTerminals"
+        class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+        @click.self="showTerminals = false"
+      >
+        <div class="bg-[var(--theme-bg-primary)] rounded-lg shadow-2xl w-full max-w-7xl h-[90vh] overflow-hidden">
+          <TerminalManager />
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -105,6 +127,7 @@ import FilterPanel from './components/FilterPanel.vue';
 import StickScrollButton from './components/StickScrollButton.vue';
 import LivePulseChart from './components/LivePulseChart.vue';
 import ThemeManager from './components/ThemeManager.vue';
+import TerminalManager from './plugins/iterm2/components/TerminalManager.vue';
 import { WS_URL } from './config';
 
 // WebSocket connection
@@ -124,6 +147,7 @@ const filters = ref({
 const stickToBottom = ref(true);
 const showThemeManager = ref(false);
 const showFilters = ref(false);
+const showTerminals = ref(false);
 
 // Computed properties
 const isDark = computed(() => {
