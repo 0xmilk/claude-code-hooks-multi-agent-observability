@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Add bun to PATH if it exists
+if [ -d "$HOME/.bun/bin" ]; then
+    export PATH="$HOME/.bun/bin:$PATH"
+fi
+
 echo "🚀 Starting Multi-Agent Observability System"
 echo "==========================================="
 
@@ -67,18 +72,38 @@ for i in {1..10}; do
     sleep 1
 done
 
+# Get local IP address
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    # macOS
+    LOCAL_IP=$(ifconfig | grep "inet " | grep -v 127.0.0.1 | awk '{print $2}' | head -n1)
+else
+    # Linux
+    LOCAL_IP=$(hostname -I | awk '{print $1}')
+fi
+
 # Display status
 echo -e "\n${BLUE}============================================${NC}"
 echo -e "${GREEN}✅ Multi-Agent Observability System Started${NC}"
 echo -e "${BLUE}============================================${NC}"
 echo
-echo -e "🖥️  Client URL: ${GREEN}http://localhost:5173${NC}"
-echo -e "🔌 Server API: ${GREEN}http://localhost:4000${NC}"
-echo -e "📡 WebSocket: ${GREEN}ws://localhost:4000/stream${NC}"
+echo -e "🖥️  Client URLs:"
+echo -e "   Local:   ${GREEN}http://localhost:5173${NC}"
+echo -e "   Network: ${GREEN}http://${LOCAL_IP}:5173${NC}"
+echo
+echo -e "🔌 Server API:"
+echo -e "   Local:   ${GREEN}http://localhost:4000${NC}"
+echo -e "   Network: ${GREEN}http://${LOCAL_IP}:4000${NC}"
+echo
+echo -e "📡 WebSocket:"
+echo -e "   Local:   ${GREEN}ws://localhost:4000/stream${NC}"
+echo -e "   Network: ${GREEN}ws://${LOCAL_IP}:4000/stream${NC}"
 echo
 echo -e "📝 Process IDs:"
 echo -e "   Server PID: ${YELLOW}$SERVER_PID${NC}"
 echo -e "   Client PID: ${YELLOW}$CLIENT_PID${NC}"
+echo
+echo -e "💡 To access from other devices on your network, use:"
+echo -e "   ${GREEN}http://${LOCAL_IP}:5173${NC}"
 echo
 echo -e "To stop the system, run: ${YELLOW}./scripts/reset-system.sh${NC}"
 echo -e "To test the system, run: ${YELLOW}./scripts/test-system.sh${NC}"
